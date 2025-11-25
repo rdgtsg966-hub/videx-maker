@@ -11,7 +11,7 @@ app.post("/api/generate",(req,res)=>{
 
     return res.json({
         ok:true,
-        downloadUrl:"https://videx-maker-sync.onrender.com/sample-demo.mp4"
+        downloadUrl:"https://videx-maker.onrender.com/sample-demo.mp4"
     });
 });
 
