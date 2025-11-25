@@ -14,37 +14,40 @@ const OUTPUT_DIR = path.join(process.cwd(), "videos");
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 // função puxa imagens da Shopee
+// Função NOVA que pega imagens direto do HTML (SEM BLOQUEIO)
 async function fetchShopeeImages(url) {
   try {
-    // extrai itemid e shopid do link
-    const match = url.match(/i\.(\\d+)\.(\\d+)/);
-    if (!match) return null;
-
-    const shopid = match[1];
-    const itemid = match[2];
-
-    const apiURL = `https://shopee.com.br/api/v4/item/get?itemid=${itemid}&shopid=${shopid}`;
-    
-    const resp = await fetch(apiURL, {
+    const resp = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+        "Accept": "text/html"
       }
     });
 
-    const data = await resp.json();
-    if (!data?.data?.images) return null;
+    const html = await resp.text();
 
-    // as imagens vêm em formato "hash", exemplo: 123abc456
-    const hashes = data.data.images;
+    // 1) Extrair bloco com imagens
+    const match = html.match(/"images":\s*\[(.*?)\]/s);
+    if (!match) {
+      console.log("❌ Não encontrou bloco de images no HTML.");
+      return null;
+    }
 
-    // monta os links reais das imagens em HD:
-    const imageUrls = hashes.map(
+    // 2) Lista de hashes
+    const raw = match[1]
+      .replace(/"/g, "")
+      .split(",")
+      .map(x => x.trim());
+
+    // 3) Transformar hashes em URLs reais
+    const imagens = raw.map(
       h => `https://down-br.img.susercontent.com/file/${h}`
     );
 
-    return imageUrls;
+    return imagens;
   } catch (err) {
-    console.error("Erro Shopee:", err);
+    console.error("❌ Erro ao captar imagens do HTML:", err);
     return null;
   }
 }
