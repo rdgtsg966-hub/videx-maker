@@ -21,7 +21,8 @@ const WORKER_URL = "https://achados.rdgtsg966.workers.dev/";
 async function fetchImagesViaWorker(productUrl) {
   try {
     const base = WORKER_URL.replace(/\/+$/, ""); // remove barra extra no final
-    const scrapeURL = `${base}?url=${encodeURIComponent(productUrl)}`;
+    const scrapeURL = `${base}/shopee?url=${encodeURIComponent(productUrl)}`;
+
 
     const resp = await fetch(scrapeURL, {
       headers: {
