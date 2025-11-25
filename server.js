@@ -13,8 +13,7 @@ app.use(bodyParser.json());
 const OUTPUT_DIR = path.join(process.cwd(), "videos");
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
-// função puxa imagens da Shopee
-// Função NOVA que pega imagens direto do HTML (SEM BLOQUEIO)
+// Função NOVA — pega imagens direto do HTML da Shopee (SEM bloqueio)
 async function fetchShopeeImages(url) {
   try {
     const resp = await fetch(url, {
@@ -27,32 +26,30 @@ async function fetchShopeeImages(url) {
 
     const html = await resp.text();
 
-    // 1) Extrair bloco com imagens
+    // extrai bloco "images": [...]
     const match = html.match(/"images":\s*\[(.*?)\]/s);
     if (!match) {
-      console.log("❌ Não encontrou bloco de images no HTML.");
+      console.log("❌ Não achou images[] no HTML");
       return null;
     }
 
-    // 2) Lista de hashes
     const raw = match[1]
       .replace(/"/g, "")
       .split(",")
       .map(x => x.trim());
 
-    // 3) Transformar hashes em URLs reais
     const imagens = raw.map(
       h => `https://down-br.img.susercontent.com/file/${h}`
     );
 
     return imagens;
+
   } catch (err) {
-    console.error("❌ Erro ao captar imagens do HTML:", err);
+    console.error("❌ Erro no scraper Shopee:", err);
     return null;
   }
 }
 
-// baixa uma imagem e retorna caminho local
 async function downloadImage(url, filepath) {
   const resp = await fetch(url);
   const buffer = await resp.arrayBuffer();
@@ -68,10 +65,12 @@ app.post("/api/generate", async (req, res) => {
     const imageUrls = await fetchShopeeImages(url);
 
     if (!imageUrls || imageUrls.length === 0) {
-      return res.json({ ok: false, message: "Não foi possível obter as imagens." });
+      return res.json({
+        ok: false,
+        message: "Não foi possível obter as imagens."
+      });
     }
 
-    // baixa as 3 primeiras imagens
     const id = Date.now().toString();
     const tempDir = path.join(process.cwd(), "temp", id);
     fs.mkdirSync(tempDir, { recursive: true });
@@ -84,16 +83,12 @@ app.post("/api/generate", async (req, res) => {
       imgPaths.push(imgPath);
     }
 
-    // monta arquivo de concat
     const listFile = path.join(tempDir, "list.txt");
     fs.writeFileSync(
       listFile,
-      imgPaths
-        .map(p => `file '${p}'\nduration 2`)
-        .join("\n")
+      imgPaths.map(p => `file '${p}'\nduration 2`).join("\n")
     );
 
-    // arquivo final
     const outputFile = path.join(OUTPUT_DIR, `${id}.mp4`);
 
     const ffmpegArgs = [
@@ -101,7 +96,8 @@ app.post("/api/generate", async (req, res) => {
       "-f", "concat",
       "-safe", "0",
       "-i", listFile,
-      "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black",
+      "-vf",
+      "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black",
       "-c:v", "libx264",
       "-pix_fmt", "yuv420p",
       outputFile
@@ -123,9 +119,12 @@ app.post("/api/generate", async (req, res) => {
     });
 
   } catch (err) {
+    console.error("Erro interno:", err);
     return res.json({ ok: false, message: "Erro interno" });
   }
 });
 
 app.use("/videos", express.static("./videos"));
-app.listen(3000, () => console.log("API rodando com Shopee Images!"));
+app.listen(3000, () =>
+  console.log("🔥 API rodando com scraper Shopee (ESM puro)!")
+);
