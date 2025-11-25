@@ -20,8 +20,9 @@ const WORKER_URL = "https://achados.rdgtsg966.workers.dev/";
 // Função que chama o Worker para pegar imagens da Shopee
 async function fetchImagesViaWorker(productUrl) {
   try {
-    const base = WORKER_URL.replace(/\/+$/, ""); // remove barra extra no final
-    const scrapeURL = `${base}/shopee?url=${encodeURIComponent(productUrl)}`;
+const base = WORKER_URL.replace(/\/+$/, "");
+const scrapeURL = `${base}?url=${encodeURIComponent(productUrl)}`;
+
 
 
     const resp = await fetch(scrapeURL, {
